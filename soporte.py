@@ -18,7 +18,7 @@ archivo = st.file_uploader(
 if archivo is not None:
 
     # =========================
-    # Leer el archivo Excel
+    # Leer Excel
     # =========================
     df = pd.read_excel(archivo, skiprows=2)
 
@@ -29,61 +29,82 @@ if archivo is not None:
         .str.replace("\n", " ")
     )
 
-    # Columna Ciclo (columna R)
+    # Columna Ciclo (R)
     df["_ciclo_R"] = df.iloc[:, 17]
+
+    st.sidebar.header("Filtros")
 
     # =========================
     # FILTRO 1 – Modalidad
     # =========================
-    st.sidebar.header("Filtros")
-
-    modalidades = sorted(df["Modalidad/Función"].dropna().unique())
-    filtro_modalidad = st.sidebar.selectbox(
+    opciones_modalidad = ["Todos"] + sorted(df["Modalidad/Función"].dropna().unique())
+    modalidad = st.sidebar.multiselect(
         "Modalidad / Función",
-        modalidades
+        opciones_modalidad,
+        default="Todos"
     )
 
-    df_m = df[df["Modalidad/Función"] == filtro_modalidad]
+    df_f = df if "Todos" in modalidad else df[df["Modalidad/Función"].isin(modalidad)]
 
     # =========================
     # FILTRO 2 – Estado
     # =========================
-    estados = sorted(df_m["Estado"].dropna().unique())
-    filtro_estado = st.sidebar.selectbox(
+    opciones_estado = ["Todos"] + sorted(df_f["Estado"].dropna().unique())
+    estado = st.sidebar.multiselect(
         "Estado",
-        estados
+        opciones_estado,
+        default="Todos"
     )
 
-    df_me = df_m[df_m["Estado"] == filtro_estado]
+    if "Todos" not in estado:
+        df_f = df_f[df_f["Estado"].isin(estado)]
 
     # =========================
     # FILTRO 3 – Cultivo
     # =========================
-    cultivos = sorted(df_me["Cultivo/Especie"].dropna().unique())
-    filtro_cultivo = st.sidebar.selectbox(
+    opciones_cultivo = ["Todos"] + sorted(df_f["Cultivo/Especie"].dropna().unique())
+    cultivo = st.sidebar.multiselect(
         "Cultivo / Especie",
-        cultivos
+        opciones_cultivo,
+        default="Todos"
     )
 
-    df_mec = df_me[df_me["Cultivo/Especie"] == filtro_cultivo]
+    if "Todos" not in cultivo:
+        df_f = df_f[df_f["Cultivo/Especie"].isin(cultivo)]
 
     # =========================
     # FILTRO 4 – Ciclo
     # =========================
-    ciclos = sorted(df_mec["_ciclo_R"].dropna().unique())
-    filtro_ciclo = st.sidebar.selectbox(
+    opciones_ciclo = ["Todos"] + sorted(df_f["_ciclo_R"].dropna().unique())
+    ciclo = st.sidebar.multiselect(
         "Ciclo",
-        ciclos
+        opciones_ciclo,
+        default="Todos"
     )
 
-    df_filtrado = df_mec[df_mec["_ciclo_R"] == filtro_ciclo]
+    if "Todos" not in ciclo:
+        df_f = df_f[df_f["_ciclo_R"].isin(ciclo)]
 
     # =========================
     # Resultados
     # =========================
     st.subheader("Resultados filtrados")
-    st.write(f"Registros encontrados: {len(df_filtrado)}")
-    st.dataframe(df_filtrado, use_container_width=True)
+    st.write(f"Registros encontrados: {len(df_f)}")
+    st.dataframe(df_f, use_container_width=True)
+
+    # =========================
+    # Botón de descarga
+    # =========================
+    @st.cache_data
+    def convertir_excel(df):
+        return df.to_excel(index=False)
+
+    st.download_button(
+        label="⬇️ Descargar resultados en Excel",
+        data=convertir_excel(df_f),
+        file_name="resultado_filtrado.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 else:
     st.info("⬆️ Sube un archivo Excel para comenzar.")
