@@ -5,68 +5,79 @@ import streamlit as st
 # Configuración inicial
 # =========================
 st.set_page_config(page_title="Filtro de Análisis Tlaloc", layout="wide")
-
 st.title("Filtro interactivo – Análisis Tlaloc")
 
 # =========================
-# 1. Leer el archivo Excel
+# 1. Subir archivo Excel
 # =========================
-ruta_excel = "Analisis Tlaloc.xlsx"
-
-df = pd.read_excel(
-    ruta_excel,
-    skiprows=2  # La fila 3 se convierte en encabezado
+archivo = st.file_uploader(
+    "Sube el archivo Excel",
+    type=["xlsx"]
 )
 
-# Limpieza defensiva de columnas
-df.columns = (
-    df.columns
-    .astype(str)
-    .str.strip()
-    .str.replace("\n", " ")
-)
+if archivo is not None:
 
-# Columna Ciclo de la columna R (índice 17)
-df["_ciclo_R"] = df.iloc[:, 17]
+    # =========================
+    # 2. Leer el archivo Excel
+    # =========================
+    df = pd.read_excel(
+        archivo,
+        skiprows=2  # La fila 3 se convierte en encabezado
+    )
 
-# =========================
-# 2. Filtros interactivos
-# =========================
-st.sidebar.header("Filtros")
+    # Limpieza defensiva de columnas
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+        .str.replace("\n", " ")
+    )
 
-filtro_modalidad = st.sidebar.selectbox(
-    "Modalidad / Función",
-    sorted(df["Modalidad/Función"].dropna().unique())
-)
+    # Columna Ciclo de la columna R (índice 17)
+    df["_ciclo_R"] = df.iloc[:, 17]
 
-filtro_estado = st.sidebar.selectbox(
-    "Estado",
-    sorted(df["Estado"].dropna().unique())
-)
+    # =========================
+    # 3. Filtros interactivos
+    # =========================
+    st.sidebar.header("Filtros")
 
-filtro_cultivo = st.sidebar.selectbox(
-    "Cultivo / Especie",
-    sorted(df["Cultivo/Especie"].dropna().unique())
-)
+    filtro_modalidad = st.sidebar.selectbox(
+        "Modalidad / Función",
+        sorted(df["Modalidad/Función"].dropna().unique())
+    )
 
-filtro_ciclo = st.sidebar.selectbox(
-    "Ciclo",
-    sorted(df["_ciclo_R"].dropna().unique())
-)
+    filtro_estado = st.sidebar.selectbox(
+        "Estado",
+        sorted(df["Estado"].dropna().unique())
+    )
 
-# =========================
-# 3. Aplicar filtros (AND)
-# =========================
-df_filtrado = df[
-    (df["Modalidad/Función"] == filtro_modalidad) &
-    (df["Estado"] == filtro_estado) &
-    (df["Cultivo/Especie"] == filtro_cultivo) &
-    (df["_ciclo_R"] == filtro_ciclo)
-]
+    filtro_cultivo = st.sidebar.selectbox(
+        "Cultivo / Especie",
+        sorted(df["Cultivo/Especie"].dropna().unique())
+    )
 
-# =========================
-# 4. Mostrar resultado
-# =========================
-st.subheader("Resultados filtrados")
-st.write(f"Registros encontrados: {len(df_filtrado)}")
-st.dataframe(df_filtrado, use_container_width=True)
+    filtro_ciclo = st.sidebar.selectbox(
+        "Ciclo",
+        sorted(df["_ciclo_R"].dropna().unique())
+    )
+
+    # =========================
+    # 4. Aplicar filtros (AND)
+    # =========================
+    df_filtrado = df[
+        (df["Modalidad/Función"] == filtro_modalidad) &
+        (df["Estado"] == filtro_estado) &
+        (df["Cultivo/Especie"] == filtro_cultivo) &
+        (df["_ciclo_R"] == filtro_ciclo)
+    ]
+
+    # =========================
+    # 5. Mostrar resultado
+    # =========================
+    st.subheader("Resultados filtrados")
+    st.write(f"Registros encontrados: {len(df_filtrado)}")
+    st.dataframe(df_filtrado, use_container_width=True)
+
+else:
+    st.info("⬆️ Por favor sube un archivo Excel para comenzar.")
+
